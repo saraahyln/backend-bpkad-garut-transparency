@@ -24,7 +24,7 @@ app.use(compression()); // enabled compression for better performance
 app.use(
   cors({
     origin: [
-      process.env.FRONTEND_URL || "https://frontend-bpkad-garut-transparency.vercel.app",
+      process.env.FRONTEND_URL || "https://frontend-bpkad-garut-transparency-steel.vercel.app",
       "http://localhost:3000",
       "http://localhost:3001",
     ],
