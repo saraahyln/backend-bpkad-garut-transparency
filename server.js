@@ -10,7 +10,20 @@ const { prisma, cache } = require("./config/database");
 // Initialize
 const app = express();
 
-// ===== FIX HELMET (hapus duplikat, pakai satu konfigurasi aman) =====
+// ===== FIX PALING PENTING: GLOBAL OPTIONS HANDLER =====
+// <<< FIX OPTIONS
+app.use((req, res, next) => {
+  if (req.method === "OPTIONS") {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    return res.sendStatus(200);
+  }
+  next();
+});
+// <<< END FIX OPTIONS
+
+// ===== FIX HELMET =====
 app.use(
   helmet({
     contentSecurityPolicy:
@@ -38,7 +51,7 @@ app.use(
   })
 );
 
-// ===== FIX PRE-FLIGHT (ini yang hilang di kode lama) =====
+// Tambahan tetap dibiarkan, tidak masalah
 app.options("*", cors());
 
 app.use(express.json({ limit: "10mb" }));
@@ -84,7 +97,7 @@ app.use("/api/tahun-anggaran", require("./routes/tahun-anggaran"));
 app.use("/api/kategori-apbd", require("./routes/kategori-apbd"));
 app.use("/api/transaksi-apbd", require("./routes/transaksi-apbd"));
 
-// Health check
+// Health endpoints
 app.get("/health", async (req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
