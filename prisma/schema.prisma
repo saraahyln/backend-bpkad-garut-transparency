@@ -1,0 +1,80 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model TahunAnggaran {
+  idTahun          Int      @id @default(autoincrement()) @map("id_tahun")
+  tahun            Int      @unique // Added unique constraint to prevent duplicates at database level
+  nomorPerda       String?  @map("nomor_perda") @db.VarChar(50)
+  tanggalPenetapan DateTime? @map("tanggal_penetapan") @db.Date
+  
+  // Relations
+  transaksiApbd    TransaksiApbd[]
+  ringkasanApbd    RingkasanApbd[]
+  
+  @@map("Tahun_Anggaran")
+}
+
+model KategoriApbd {
+  idKategori   Int     @id @default(autoincrement()) @map("id_kategori")
+  idParent     Int?    @map("id_parent")
+  jenis        String  @db.VarChar(50)
+  namaKategori String  @map("nama_kategori") @db.VarChar(255)
+  kode         String? @db.VarChar(50) // Added missing kode field that was referenced in backend code
+  level        Int     @default(1)
+  
+  // Relations
+  parent       KategoriApbd?  @relation("KategoriHierarchy", fields: [idParent], references: [idKategori])
+  children     KategoriApbd[] @relation("KategoriHierarchy")
+  transaksiApbd TransaksiApbd[]
+  
+  @@map("Kategori_APBD")
+}
+
+model TransaksiApbd {
+  idTransaksi Int     @id @default(autoincrement()) @map("id_transaksi")
+  idTahun     Int     @map("id_tahun")
+  idKategori  Int     @map("id_kategori")
+  jumlah      Decimal @db.Decimal(20, 2)
+  
+  // Relations
+  tahunAnggaran TahunAnggaran @relation(fields: [idTahun], references: [idTahun])
+  kategoriApbd  KategoriApbd  @relation(fields: [idKategori], references: [idKategori])
+  
+  @@unique([idTahun, idKategori])
+  @@map("Transaksi_APBD")
+}
+
+model RingkasanApbd {
+  idRingkasan      Int     @id @default(autoincrement()) @map("id_ringkasan")
+  idTahun          Int     @unique @map("id_tahun") // Added unique constraint for idTahun
+  totalPendapatan  Decimal? @map("total_pendapatan") @db.Decimal(20, 2)
+  totalPembelanjaan Decimal? @map("total_pembelanjaan") @db.Decimal(20, 2)
+  surplusDefisit   Decimal? @map("surplus_defisit") @db.Decimal(20, 2)
+  pembiayaanNetto  Decimal? @map("pembiayaan_netto") @db.Decimal(20, 2)
+  sisaPembiayaan   Decimal? @map("sisa_pembiayaan") @db.Decimal(20, 2)
+  totalPenerimaanPembiayaan Decimal? @map("total_penerimaan_pembiayaan") @db.Decimal(20, 2)
+  totalPengeluaranPembiayaan Decimal? @map("total_pengeluaran_pembiayaan") @db.Decimal(20, 2)
+  
+  // Relations
+  tahunAnggaran TahunAnggaran @relation(fields: [idTahun], references: [idTahun])
+  
+  @@map("Ringkasan_APBD")
+}
+
+model Admin {
+  idAdmin      Int    @id @default(autoincrement()) @map("id_admin")
+  username     String @unique @db.VarChar(50)
+  passwordHash String @map("password_hash")
+  role         String @default("admin") @db.VarChar(20)
+  
+  @@map("Admin")
+}
