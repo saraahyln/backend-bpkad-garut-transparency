@@ -1,8 +1,8 @@
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
-const compression = require("compression"); // uncommented compression for production
-const rateLimit = require("express-rate-limit"); // uncommented rate limiting for production
+const compression = require("compression");
+const rateLimit = require("express-rate-limit");
 require("dotenv").config();
 
 const { prisma, cache } = require("./config/database");
@@ -10,21 +10,25 @@ const { prisma, cache } = require("./config/database");
 // Initialize
 const app = express();
 
-// Middleware
-app.use(helmet());
+// ===== FIX HELMET (hapus duplikat, pakai satu konfigurasi aman) =====
 app.use(
   helmet({
     contentSecurityPolicy:
       process.env.NODE_ENV === "production" ? undefined : false,
     crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" },
   })
 );
-app.use(compression()); // enabled compression for better performance
 
+// Compression
+app.use(compression());
+
+// ===== FIX CORS =====
 app.use(
   cors({
     origin: [
-      process.env.FRONTEND_URL || "https://frontend-bpkad-garut-transparency-steel.vercel.app",
+      process.env.FRONTEND_URL ||
+        "https://frontend-bpkad-garut-transparency-steel.vercel.app",
       "http://localhost:3000",
       "http://localhost:3001",
     ],
@@ -34,18 +38,23 @@ app.use(
   })
 );
 
+// ===== FIX PRE-FLIGHT (ini yang hilang di kode lama) =====
+app.options("*", cors());
+
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
+// Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === "production" ? 100 : 1000, // stricter limit in production
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === "production" ? 100 : 1000,
   message: "Too many requests from this IP, please try again later.",
   standardHeaders: true,
   legacyHeaders: false,
 });
 app.use("/api/", limiter);
 
+// Root
 app.get("/", (req, res) => {
   res.json({
     message: "API Backend BPKAD Garut Transparansi Keuangan",
@@ -68,9 +77,9 @@ app.get("/", (req, res) => {
 // Routes
 app.use("/api/dashboard", require("./routes/dashboard"));
 app.use("/api/apbd", require("./routes/apbd"));
-app.use("/api/auth", require("./routes/auth")); // Added route for auth
+app.use("/api/auth", require("./routes/auth"));
 app.use("/api/admin", require("./routes/admin"));
-app.use("/api/user-management", require("./routes/user-management")); // Added user management route
+app.use("/api/user-management", require("./routes/user-management"));
 app.use("/api/tahun-anggaran", require("./routes/tahun-anggaran"));
 app.use("/api/kategori-apbd", require("./routes/kategori-apbd"));
 app.use("/api/transaksi-apbd", require("./routes/transaksi-apbd"));
@@ -116,7 +125,7 @@ app.get("/api/health", async (req, res) => {
   }
 });
 
-// Error handling middleware
+// Error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({
@@ -128,7 +137,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler
+// 404
 app.use("*", (req, res) => {
   res.status(404).json({ error: "Rute tidak ditemukan" });
 });
@@ -140,7 +149,9 @@ app.listen(PORT, () => {
   console.log(`📊 Environment: ${process.env.NODE_ENV || "development"}`);
   console.log(`🌐 Access: http://localhost:${PORT}`);
   console.log(
-    `🔗 Frontend URL: ${process.env.FRONTEND_URL || "http://localhost:3000"}`
+    `🔗 Frontend URL: ${
+      process.env.FRONTEND_URL || "http://localhost:3000"
+    }`
   );
 });
 
